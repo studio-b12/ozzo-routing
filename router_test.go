@@ -101,6 +101,18 @@ func TestRouterNormalizeRequestPath(t *testing.T) {
 	}
 }
 
+func TestRouterFindWildcardMethod(t *testing.T) {
+	r := New()
+	r.add("*", "/users/<id>", []Handler{NotFoundHandler})
+	pvalues := make([]string, 10)
+	handlers, pnames := r.find("FOO", "/users/1", pvalues)
+	assert.Equal(t, 1, len(handlers))
+	if assert.Equal(t, 1, len(pnames)) {
+		assert.Equal(t, "id", pnames[0])
+	}
+	assert.Equal(t, "1", pvalues[0])
+}
+
 func TestRouterHandleError(t *testing.T) {
 	r := New()
 	res := httptest.NewRecorder()
