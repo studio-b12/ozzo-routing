@@ -140,6 +140,14 @@ func (r *Router) find(method, path string, pvalues []string) (handlers []Handler
 	if hh != nil {
 		return hh.([]Handler), pnames
 	}
+
+	if store := r.stores["*"]; store != nil {
+		hh, pnames = store.Get(path, pvalues)
+	}
+	if hh != nil {
+		return hh.([]Handler), pnames
+	}
+
 	return r.notFoundHandlers, pnames
 }
 
