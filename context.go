@@ -81,15 +81,15 @@ func (c *Context) GetUrlWithParamNames() string {
 		return ""
 	}
 	url := c.Request.URL.Path
-	for i, pname := range c.pnames {
-		if len(c.pvalues) < i {
+	for i, pvalue := range c.pvalues {
+		if pvalue == "" || len(c.pnames) < i {
 			break
 		}
-		lastIndex := strings.LastIndex(url, pname)
+		lastIndex := strings.LastIndex(url, pvalue)
 		if lastIndex == -1 {
 			continue
 		}
-		replacement := fmt.Sprintf("<%v>", c.pvalues[i])
+		replacement := fmt.Sprintf("<%v>", c.pnames[i])
 		url = url[:lastIndex] + replacement + url[lastIndex+len(replacement):]
 	}
 	return url
