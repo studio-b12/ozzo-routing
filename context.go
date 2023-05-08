@@ -6,6 +6,7 @@ package routing
 
 import (
 	"net/http"
+	"strings"
 )
 
 // Context represents the contextual data and environment while processing an incoming HTTP request.
@@ -56,6 +57,36 @@ func (c *Context) SetParam(name, value string) {
 	}
 	c.pnames = append(c.pnames, name)
 	c.pvalues = append(c.pvalues, value)
+}
+
+// GetParamNames returns a copy of the parameter names.
+func (c *Context) GetParamNames() []string {
+	pnames := make([]string, len(c.pnames))
+	copy(pnames, c.pnames)
+	return pnames
+}
+
+// GetParamValues returns a copy of the parameter values.
+func (c *Context) GetParamValues() []string {
+	pvalues := make([]string, len(c.pvalues))
+	copy(pvalues, c.pvalues)
+	return pvalues
+}
+
+// GetUrlWithParams returns the requests url with parameter values
+// being replaced with the parameter names
+func (c *Context) GetUrlWithParamNames() string {
+	if c.Request == nil || c.Request.URL == nil {
+		return ""
+	}
+	url := c.Request.URL.Path
+	for i, pname := range c.pnames {
+		if len(c.pvalues) < i {
+			break
+		}
+		url = strings.Replace(url, pname, c.pvalues[i], 1)
+	}
+	return url
 }
 
 // Get returns the named data item previously registered with the context by calling Set.
