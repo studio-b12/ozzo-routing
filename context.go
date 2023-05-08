@@ -90,7 +90,7 @@ func (c *Context) GetUrlWithParamNames() string {
 			continue
 		}
 		replacement := fmt.Sprintf("<%v>", c.pnames[i])
-		url = url[:lastIndex] + replacement + url[lastIndex+len(replacement):]
+		url = url[:lastIndex] + replacement + url[lastIndex+len(pvalue):]
 	}
 	return url
 }
