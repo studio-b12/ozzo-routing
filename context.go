@@ -5,6 +5,7 @@
 package routing
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -84,7 +85,12 @@ func (c *Context) GetUrlWithParamNames() string {
 		if len(c.pvalues) < i {
 			break
 		}
-		url = strings.Replace(url, pname, c.pvalues[i], 1)
+		lastIndex := strings.LastIndex(url, pname)
+		if lastIndex == -1 {
+			continue
+		}
+		replacement := fmt.Sprintf("<%v>", c.pvalues[i])
+		url = url[:lastIndex] + replacement + url[lastIndex+len(replacement):]
 	}
 	return url
 }
