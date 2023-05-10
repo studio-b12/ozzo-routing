@@ -31,16 +31,16 @@ func TestReadForm(t *testing.T) {
 		D  []int
 	}
 	values := map[string][]string{
-		"x1":   []string{"abc", "123"},
-		"A1":   []string{"a1"},
-		"x2":   []string{"1", "2"},
-		"B.B1": []string{"b1", "b2"},
-		"B.B2": []string{"true"},
-		"B.B3": []string{"1.23"},
-		"c.B1": []string{"fb1", "fb2"},
-		"e.B1": []string{"fe1", "fe2"},
-		"c":    []string{"100"},
-		"D":    []string{"100", "200", "300"},
+		"x1":   {"abc", "123"},
+		"A1":   {"a1"},
+		"x2":   {"1", "2"},
+		"B.B1": {"b1", "b2"},
+		"B.B2": {"true"},
+		"B.B3": {"1.23"},
+		"c.B1": {"fb1", "fb2"},
+		"e.B1": {"fe1", "fe2"},
+		"c":    {"100"},
+		"D":    {"100", "200", "300"},
 	}
 	err := ReadFormData(values, &a)
 	assert.Nil(t, err)
@@ -83,4 +83,28 @@ func TestDefaultDataReader(t *testing.T) {
 		assert.Nil(t, err, test.tag)
 		assert.Equal(t, expected, data, test.tag)
 	}
+}
+
+type TU struct {
+	UValue string
+}
+
+func (tu *TU) UnmarshalText(text []byte) error {
+	tu.UValue = "TU_" + string(text[:])
+	return nil
+}
+
+func TestTextUnmarshaler(t *testing.T) {
+	var a struct {
+		ATU TU     `form:"atu"`
+		NTU string `form:"ntu"`
+	}
+	values := map[string][]string{
+		"atu": {"ORIGINAL"},
+		"ntu": {"ORIGINAL"},
+	}
+	err := ReadFormData(values, &a)
+	assert.Nil(t, err)
+	assert.Equal(t, "TU_ORIGINAL", a.ATU.UValue)
+	assert.Equal(t, "ORIGINAL", a.NTU)
 }

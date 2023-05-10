@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/go-ozzo/ozzo-routing"
+	"github.com/golang-jwt/jwt"
+	"github.com/go-ozzo/ozzo-routing/v2"
 )
 
 // User is the key used to store and retrieve the user identity information in routing.Context
@@ -35,8 +35,8 @@ type BasicAuthFunc func(c *routing.Context, username, password string) (Identity
 //     "errors"
 //     "fmt"
 //     "net/http"
-//     "github.com/go-ozzo/ozzo-routing"
-//     "github.com/go-ozzo/ozzo-routing/auth"
+//     "github.com/go-ozzo/ozzo-routing/v2"
+//     "github.com/go-ozzo/ozzo-routing/v2/auth"
 //   )
 //   func main() {
 //     r := routing.New()
@@ -95,8 +95,8 @@ type TokenAuthFunc func(c *routing.Context, token string) (Identity, error)
 //     "errors"
 //     "fmt"
 //     "net/http"
-//     "github.com/go-ozzo/ozzo-routing"
-//     "github.com/go-ozzo/ozzo-routing/auth"
+//     "github.com/go-ozzo/ozzo-routing/v2"
+//     "github.com/go-ozzo/ozzo-routing/v2/auth"
 //   )
 //   func main() {
 //     r := routing.New()
@@ -152,8 +152,8 @@ var TokenName = "access-token"
 //     "errors"
 //     "fmt"
 //     "net/http"
-//     "github.com/go-ozzo/ozzo-routing"
-//     "github.com/go-ozzo/ozzo-routing/auth"
+//     "github.com/go-ozzo/ozzo-routing/v2"
+//     "github.com/go-ozzo/ozzo-routing/v2/auth"
 //   )
 //   func main() {
 //     r := routing.New()
@@ -186,10 +186,10 @@ func Query(fn TokenAuthFunc, tokenName ...string) routing.Handler {
 	}
 }
 
-// JWTTokenHandler handles the parsed JWT token.
+// JWTTokenHandler represents a handler function that handles the parsed JWT token.
 type JWTTokenHandler func(*routing.Context, *jwt.Token) error
 
-//Get a dynamic VerificationKey
+// VerificationKeyHandler represents a handler function that gets a dynamic VerificationKey
 type VerificationKeyHandler func(*routing.Context) string
 
 // JWTOptions represents the options that can be used with the JWT handler.
@@ -224,8 +224,8 @@ func DefaultJWTTokenHandler(c *routing.Context, token *jwt.Token) error {
 //     "fmt"
 //     "net/http"
 //     "github.com/dgrijalva/jwt-go"
-//     "github.com/go-ozzo/ozzo-routing"
-//     "github.com/go-ozzo/ozzo-routing/auth"
+//     "github.com/go-ozzo/ozzo-routing/v2"
+//     "github.com/go-ozzo/ozzo-routing/v2/auth"
 //   )
 //   func main() {
 //     signingKey := "secret-key"

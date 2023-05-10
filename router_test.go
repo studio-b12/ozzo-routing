@@ -20,7 +20,13 @@ func TestRouterNotFound(t *testing.T) {
 	r.NotFound(MethodNotAllowedHandler, NotFoundHandler)
 
 	res := httptest.NewRecorder()
-	req, _ := http.NewRequest("PUT", "/users", nil)
+	req, _ := http.NewRequest("GET", "/users", nil)
+	r.ServeHTTP(res, req)
+	assert.Equal(t, "ok", res.Body.String(), "response body")
+	assert.Equal(t, http.StatusOK, res.Code, "HTTP status code")
+
+	res = httptest.NewRecorder()
+	req, _ = http.NewRequest("PUT", "/users", nil)
 	r.ServeHTTP(res, req)
 	assert.Equal(t, "GET, OPTIONS, POST", res.Header().Get("Allow"), "Allow header")
 	assert.Equal(t, http.StatusMethodNotAllowed, res.Code, "HTTP status code")
@@ -32,10 +38,17 @@ func TestRouterNotFound(t *testing.T) {
 	assert.Equal(t, http.StatusOK, res.Code, "HTTP status code")
 
 	res = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/posts", nil)
+	req, _ = http.NewRequest("GET", "/users/", nil)
 	r.ServeHTTP(res, req)
 	assert.Equal(t, "", res.Header().Get("Allow"), "Allow header")
 	assert.Equal(t, http.StatusNotFound, res.Code, "HTTP status code")
+
+	r.IgnoreTrailingSlash = true
+	res = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/users/", nil)
+	r.ServeHTTP(res, req)
+	assert.Equal(t, "ok", res.Body.String(), "response body")
+	assert.Equal(t, http.StatusOK, res.Code, "HTTP status code")
 }
 
 func TestRouterUse(t *testing.T) {
@@ -62,8 +75,37 @@ func TestRouterAdd(t *testing.T) {
 func TestRouterFind(t *testing.T) {
 	r := New()
 	r.add("GET", "/users/<id>", []Handler{NotFoundHandler})
+	handlers, params := r.Find("GET", "/users/1")
+	assert.Equal(t, 1, len(handlers))
+	if assert.Equal(t, 1, len(params)) {
+		assert.Equal(t, "1", params["id"])
+	}
+}
+
+func TestRouterNormalizeRequestPath(t *testing.T) {
+	tests := []struct {
+		path     string
+		expected string
+	}{
+		{"/", "/"},
+		{"/users", "/users"},
+		{"/users/", "/users"},
+		{"/users//", "/users"},
+		{"///", "/"},
+	}
+	r := New()
+	r.IgnoreTrailingSlash = true
+	for _, test := range tests {
+		result := r.normalizeRequestPath(test.path)
+		assert.Equal(t, test.expected, result)
+	}
+}
+
+func TestRouterFindWildcardMethod(t *testing.T) {
+	r := New()
+	r.add("*", "/users/<id>", []Handler{NotFoundHandler})
 	pvalues := make([]string, 10)
-	handlers, pnames := r.find("GET", "/users/1", pvalues)
+	handlers, pnames := r.find("FOO", "/users/1", pvalues)
 	assert.Equal(t, 1, len(handlers))
 	if assert.Equal(t, 1, len(pnames)) {
 		assert.Equal(t, "id", pnames[0])

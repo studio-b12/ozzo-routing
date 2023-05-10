@@ -5,7 +5,9 @@
 package routing
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 )
 
 // Context represents the contextual data and environment while processing an incoming HTTP request.
@@ -43,6 +45,54 @@ func (c *Context) Param(name string) string {
 		}
 	}
 	return ""
+}
+
+// SetParam sets the named parameter value.
+// This method is primarily provided for writing unit tests.
+func (c *Context) SetParam(name, value string) {
+	for i, n := range c.pnames {
+		if n == name {
+			c.pvalues[i] = value
+			return
+		}
+	}
+	c.pnames = append(c.pnames, name)
+	c.pvalues = append(c.pvalues, value)
+}
+
+// GetParamNames returns a copy of the parameter names.
+func (c *Context) GetParamNames() []string {
+	pnames := make([]string, len(c.pnames))
+	copy(pnames, c.pnames)
+	return pnames
+}
+
+// GetParamValues returns a copy of the parameter values.
+func (c *Context) GetParamValues() []string {
+	pvalues := make([]string, len(c.pvalues))
+	copy(pvalues, c.pvalues)
+	return pvalues
+}
+
+// GetUrlWithParams returns the requests url with parameter values
+// being replaced with the parameter names
+func (c *Context) GetUrlWithParamNames() string {
+	if c.Request == nil || c.Request.URL == nil {
+		return ""
+	}
+	url := c.Request.URL.Path
+	for i, pvalue := range c.pvalues {
+		if pvalue == "" || len(c.pnames) < i {
+			break
+		}
+		lastIndex := strings.LastIndex(url, pvalue)
+		if lastIndex == -1 {
+			continue
+		}
+		replacement := fmt.Sprintf("<%v>", c.pnames[i])
+		url = url[:lastIndex] + replacement + url[lastIndex+len(pvalue):]
+	}
+	return url
 }
 
 // Get returns the named data item previously registered with the context by calling Set.
@@ -159,9 +209,17 @@ func (c *Context) Write(data interface{}) error {
 	return c.writer.Write(c.Response, data)
 }
 
+// WriteWithStatus sends the HTTP status code and writes the given data of arbitrary type to the response.
+// See Write() for details on how data is written to response.
+func (c *Context) WriteWithStatus(data interface{}, statusCode int) error {
+	c.Response.WriteHeader(statusCode)
+	return c.Write(data)
+}
+
 // SetDataWriter sets the data writer that will be used by Write().
 func (c *Context) SetDataWriter(writer DataWriter) {
 	c.writer = writer
+	writer.SetHeader(c.Response)
 }
 
 // init sets the request and response of the context and resets all other properties.

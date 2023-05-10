@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-ozzo/ozzo-routing"
+	"github.com/go-ozzo/ozzo-routing/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,6 +27,7 @@ func TestRemover(t *testing.T) {
 	req, _ = http.NewRequest("GET", "/", nil)
 	c = routing.NewContext(res, req)
 	err = h(c)
+	assert.Nil(t, err, "return value is nil")
 	assert.Equal(t, http.StatusOK, res.Code)
 	assert.Equal(t, "", res.Header().Get("Location"))
 
@@ -34,6 +35,15 @@ func TestRemover(t *testing.T) {
 	req, _ = http.NewRequest("GET", "/users", nil)
 	c = routing.NewContext(res, req)
 	err = h(c)
+	assert.Nil(t, err, "return value is nil")
 	assert.Equal(t, http.StatusOK, res.Code)
 	assert.Equal(t, "", res.Header().Get("Location"))
+
+	res = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/users/", nil)
+	c = routing.NewContext(res, req)
+	err = h(c)
+	assert.Nil(t, err, "return value is nil")
+	assert.Equal(t, http.StatusTemporaryRedirect, res.Code)
+	assert.Equal(t, "/users", res.Header().Get("Location"))
 }
