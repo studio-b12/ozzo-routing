@@ -12,7 +12,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/go-ozzo/ozzo-routing"
+	routing "github.com/studio-b12/ozzo-routing"
+)
+
+type Encoding string
+
+const (
+	Brotli = Encoding("br")
+	GZip   = Encoding("gzip")
 )
 
 // ServerOptions defines the possible options for the Server handler.
@@ -34,6 +41,8 @@ type ServerOptions struct {
 	// The function should return a boolean indicating whether the file should be served or not.
 	// If false, a 404 HTTP error will be returned by the handler.
 	Allow func(*routing.Context, string) bool
+
+	Compression []Encoding
 }
 
 // PathMap specifies the mapping between URL paths (keys) and file paths (keys).
@@ -55,17 +64,17 @@ func init() {
 // For example, if the path map contains both "/css" and "/css/img", and the URL path is "/css/img/logo.gif",
 // then the path mapped by "/css/img" will be used.
 //
-//     import (
-//         "log"
-//         "github.com/go-ozzo/ozzo-routing"
-//         "github.com/go-ozzo/ozzo-routing/file"
-//     )
+//	import (
+//	    "log"
+//	    "github.com/studio-b12/ozzo-routing"
+//	    "github.com/studio-b12/ozzo-routing/file"
+//	)
 //
-//     r := routing.New()
-//     r.Get("/*", file.Server(file.PathMap{
-//          "/css": "/ui/dist/css",
-//          "/js": "/ui/dist/js",
-//     }))
+//	r := routing.New()
+//	r.Get("/*", file.Server(file.PathMap{
+//	     "/css": "/ui/dist/css",
+//	     "/js": "/ui/dist/js",
+//	}))
 func Server(pathMap PathMap, opts ...ServerOptions) routing.Handler {
 	var options ServerOptions
 	if len(opts) > 0 {
@@ -83,6 +92,7 @@ func Server(pathMap PathMap, opts ...ServerOptions) routing.Handler {
 		if c.Request.Method != "GET" && c.Request.Method != "HEAD" {
 			return routing.NewHTTPError(http.StatusMethodNotAllowed)
 		}
+
 		path, found := matchPath(c.Request.URL.Path, from, to)
 		if !found || options.Allow != nil && !options.Allow(c, path) {
 			return routing.NewHTTPError(http.StatusNotFound)
@@ -92,9 +102,13 @@ func Server(pathMap PathMap, opts ...ServerOptions) routing.Handler {
 			file  http.File
 			fstat os.FileInfo
 			err   error
+			enc   Encoding
 		)
 
-		if file, err = dir.Open(path); err != nil {
+		encodings := negotiateEncodings(c, options.Compression)
+		dir := CompressionDir{dir, encodings}
+
+		if file, enc, err = dir.Open(path); err != nil {
 			if options.CatchAllFile != "" {
 				return serveFile(c, dir, options.CatchAllFile)
 			}
@@ -113,22 +127,30 @@ func Server(pathMap PathMap, opts ...ServerOptions) routing.Handler {
 			return serveFile(c, dir, filepath.Join(path, options.IndexFile))
 		}
 
+		if enc != "" {
+			c.Response.Header().Set("Content-Encoding", string(enc))
+		}
 		http.ServeContent(c.Response, c.Request, path, fstat.ModTime(), file)
 		return nil
 	}
 }
 
-func serveFile(c *routing.Context, dir http.Dir, path string) error {
-	file, err := dir.Open(path)
+func serveFile(c *routing.Context, dir CompressionDir, path string) error {
+	file, enc, err := dir.Open(path)
 	if err != nil {
 		return routing.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 	defer file.Close()
+
 	fstat, err := file.Stat()
 	if err != nil {
 		return routing.NewHTTPError(http.StatusNotFound, err.Error())
 	} else if fstat.IsDir() {
 		return routing.NewHTTPError(http.StatusNotFound)
+	}
+
+	if enc != "" {
+		c.Response.Header().Set("Content-Encoding", string(enc))
 	}
 	http.ServeContent(c.Response, c.Request, path, fstat.ModTime(), file)
 	return nil
@@ -157,6 +179,7 @@ func Content(path string) routing.Handler {
 		} else if fstat.IsDir() {
 			return routing.NewHTTPError(http.StatusNotFound)
 		}
+
 		http.ServeContent(c.Response, c.Request, path, fstat.ModTime(), file)
 		return nil
 	}
@@ -185,4 +208,23 @@ func matchPath(path string, from, to []string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func negotiateEncodings(c *routing.Context, available []Encoding) []Encoding {
+	if len(available) == 0 {
+		return nil
+	}
+
+	negotioated := make([]Encoding, 0, len(available))
+
+	acceptEncodings := strings.Split(c.Request.Header.Get("Accept-Encoding"), ",")
+	for _, availEnc := range available {
+		for _, accEnc := range acceptEncodings {
+			if string(availEnc) == strings.TrimSpace(strings.ToLower(accEnc)) {
+				negotioated = append(negotioated, availEnc)
+			}
+		}
+	}
+
+	return negotioated
 }
