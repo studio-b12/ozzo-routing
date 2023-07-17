@@ -47,6 +47,28 @@ type ServerOptions struct {
 	Compression []Encoding
 }
 
+func (t ServerOptions) Merge(other ServerOptions) (new ServerOptions) {
+	new = t
+
+	if other.Allow != nil {
+		new.Allow = other.Allow
+	}
+	if other.CatchAllFile != "" {
+		new.CatchAllFile = other.CatchAllFile
+	}
+	if other.Compression != nil {
+		new.Compression = other.Compression
+	}
+	if other.IndexFile != "" {
+		new.IndexFile = other.IndexFile
+	}
+	if other.RootPath != "" {
+		new.RootPath = other.RootPath
+	}
+
+	return new
+}
+
 // PathMap specifies the mapping between URL paths (keys) and file paths (keys).
 // The file paths are relative to Options.RootPath
 type PathMap map[string]string
