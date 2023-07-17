@@ -12,8 +12,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-ozzo/ozzo-routing"
 	"github.com/stretchr/testify/assert"
+	"github.com/studio-b12/ozzo-routing"
 )
 
 func TestCustomLogger(t *testing.T) {

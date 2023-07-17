@@ -53,12 +53,12 @@ package main
 import (
 	"log"
 	"net/http"
-	"github.com/go-ozzo/ozzo-routing"
-	"github.com/go-ozzo/ozzo-routing/access"
-	"github.com/go-ozzo/ozzo-routing/slash"
-	"github.com/go-ozzo/ozzo-routing/content"
-	"github.com/go-ozzo/ozzo-routing/fault"
-	"github.com/go-ozzo/ozzo-routing/file"
+	"github.com/studio-b12/ozzo-routing"
+	"github.com/studio-b12/ozzo-routing/access"
+	"github.com/studio-b12/ozzo-routing/slash"
+	"github.com/studio-b12/ozzo-routing/content"
+	"github.com/studio-b12/ozzo-routing/fault"
+	"github.com/studio-b12/ozzo-routing/file"
 )
 
 func main() {
@@ -342,8 +342,8 @@ under the specified directories, while the latter serves the content of a single
 
 ```go
 import (
-	"github.com/go-ozzo/ozzo-routing"
-	"github.com/go-ozzo/ozzo-routing/file"
+	"github.com/studio-b12/ozzo-routing"
+	"github.com/studio-b12/ozzo-routing/file"
 )
 
 router := routing.NewRouter()
@@ -383,10 +383,10 @@ The following code shows how these handlers may be used:
 import (
 	"log"
 	"net/http"
-	"github.com/go-ozzo/ozzo-routing"
-	"github.com/go-ozzo/ozzo-routing/access"
-	"github.com/go-ozzo/ozzo-routing/slash"
-	"github.com/go-ozzo/ozzo-routing/fault"
+	"github.com/studio-b12/ozzo-routing"
+	"github.com/studio-b12/ozzo-routing/access"
+	"github.com/studio-b12/ozzo-routing/slash"
+	"github.com/studio-b12/ozzo-routing/fault"
 )
 
 router := routing.New()

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-ozzo/ozzo-routing"
+	"github.com/studio-b12/ozzo-routing"
 )
 
 // LogFunc logs a message using the given format and optional arguments.
@@ -31,18 +31,18 @@ type LogWriterFunc func(req *http.Request, res *LogResponseWriter, elapsed float
 // request, as well as the elapsed time since the request first came through the middleware.
 // LogWriterFunc can then do whatever logging it needs to do.
 //
-//     import (
-//         "log"
-//         "github.com/go-ozzo/ozzo-routing"
-//         "github.com/go-ozzo/ozzo-routing/access"
-//         "net/http"
-//     )
+//	import (
+//	    "log"
+//	    "github.com/studio-b12/ozzo-routing"
+//	    "github.com/studio-b12/ozzo-routing/access"
+//	    "net/http"
+//	)
 //
-//     func myCustomLogger(req http.Context, res access.LogResponseWriter, elapsed int64) {
-//         // Do something with the request, response, and elapsed time data here
-//     }
-//     r := routing.New()
-//     r.Use(access.CustomLogger(myCustomLogger))
+//	func myCustomLogger(req http.Context, res access.LogResponseWriter, elapsed int64) {
+//	    // Do something with the request, response, and elapsed time data here
+//	}
+//	r := routing.New()
+//	r.Use(access.CustomLogger(myCustomLogger))
 func CustomLogger(loggerFunc LogWriterFunc) routing.Handler {
 	return func(c *routing.Context) error {
 		startTime := time.Now()
@@ -65,14 +65,14 @@ func CustomLogger(loggerFunc LogWriterFunc) routing.Handler {
 // The access log messages contain information including client IPs, time used to serve each request, request line,
 // response status and size.
 //
-//     import (
-//         "log"
-//         "github.com/go-ozzo/ozzo-routing"
-//         "github.com/go-ozzo/ozzo-routing/access"
-//     )
+//	import (
+//	    "log"
+//	    "github.com/studio-b12/ozzo-routing"
+//	    "github.com/studio-b12/ozzo-routing/access"
+//	)
 //
-//     r := routing.New()
-//     r.Use(access.Logger(log.Printf))
+//	r := routing.New()
+//	r.Use(access.Logger(log.Printf))
 func Logger(log LogFunc) routing.Handler {
 	var logger = func(req *http.Request, rw *LogResponseWriter, elapsed float64) {
 		clientIP := GetClientIP(req)

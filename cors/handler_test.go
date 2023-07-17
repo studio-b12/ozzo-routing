@@ -11,8 +11,8 @@ import (
 
 	"time"
 
-	"github.com/go-ozzo/ozzo-routing"
 	"github.com/stretchr/testify/assert"
+	"github.com/studio-b12/ozzo-routing"
 )
 
 func TestBuildAllowMap(t *testing.T) {

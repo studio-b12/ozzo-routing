@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-ozzo/ozzo-routing"
 	"github.com/stretchr/testify/assert"
+	routing "github.com/studio-b12/ozzo-routing"
 )
 
 func TestPanicHandler(t *testing.T) {
@@ -38,6 +38,6 @@ func TestPanicHandler(t *testing.T) {
 	assert.Nil(t, c.Next())
 	assert.Equal(t, http.StatusInternalServerError, res.Code)
 	assert.Equal(t, "xyz", res.Body.String())
-	assert.Contains(t, buf.String(), "recovery_test.go")
+	assert.Contains(t, buf.String(), "panic_test.go")
 	assert.Contains(t, buf.String(), "xyz")
 }
