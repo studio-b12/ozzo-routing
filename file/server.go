@@ -41,7 +41,9 @@ type ServerOptions struct {
 	// The function should return a boolean indicating whether the file should be served or not.
 	// If false, a 404 HTTP error will be returned by the handler.
 	Allow func(*routing.Context, string) bool
-
+	// Define available compression encodings for serving files. Encodings are negotiated against the
+	// unser agent. The first encoding which matches the accepted encodings from the user agent as well
+	// as is available as file is served to the client.
 	Compression []Encoding
 }
 
@@ -106,7 +108,7 @@ func Server(pathMap PathMap, opts ...ServerOptions) routing.Handler {
 		)
 
 		encodings := negotiateEncodings(c, options.Compression)
-		dir := CompressionDir{dir, encodings}
+		dir := compressionDir{dir, encodings}
 
 		if file, enc, err = dir.Open(path); err != nil {
 			if options.CatchAllFile != "" {
@@ -135,7 +137,7 @@ func Server(pathMap PathMap, opts ...ServerOptions) routing.Handler {
 	}
 }
 
-func serveFile(c *routing.Context, dir CompressionDir, path string) error {
+func serveFile(c *routing.Context, dir compressionDir, path string) error {
 	file, enc, err := dir.Open(path)
 	if err != nil {
 		return routing.NewHTTPError(http.StatusNotFound, err.Error())
