@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	routing "github.com/go-ozzo/ozzo-routing/v2"
 	"github.com/stretchr/testify/assert"
@@ -46,7 +47,7 @@ func TestLogger(t *testing.T) {
 
 func TestLogResponseWriter(t *testing.T) {
 	res := httptest.NewRecorder()
-	w := &LogResponseWriter{res, 0, 0}
+	w := &LogResponseWriter{res, 0, 0, time.Time{}, 0}
 	w.WriteHeader(http.StatusBadRequest)
 	assert.Equal(t, http.StatusBadRequest, res.Code)
 	assert.Equal(t, http.StatusBadRequest, w.Status)

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	routing "github.com/go-ozzo/ozzo-routing/v2"
 	"github.com/stretchr/testify/assert"
-	routing "github.com/studio-b12/ozzo-routing"
 )
 
 func TestParsePathMap(t *testing.T) {

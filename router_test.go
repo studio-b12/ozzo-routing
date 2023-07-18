@@ -3,10 +3,11 @@ package routing
 import (
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRouterNotFound(t *testing.T) {
@@ -99,18 +100,6 @@ func TestRouterNormalizeRequestPath(t *testing.T) {
 		result := r.normalizeRequestPath(test.path)
 		assert.Equal(t, test.expected, result)
 	}
-}
-
-func TestRouterFindWildcardMethod(t *testing.T) {
-	r := New()
-	r.add("*", "/users/<id>", []Handler{NotFoundHandler})
-	pvalues := make([]string, 10)
-	handlers, pnames := r.find("FOO", "/users/1", pvalues)
-	assert.Equal(t, 1, len(handlers))
-	if assert.Equal(t, 1, len(pnames)) {
-		assert.Equal(t, "id", pnames[0])
-	}
-	assert.Equal(t, "1", pvalues[0])
 }
 
 func TestRouterFindWildcardMethod(t *testing.T) {
