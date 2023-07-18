@@ -31,29 +31,30 @@ type LogWriterFunc func(req *http.Request, res *LogResponseWriter, elapsed float
 // request, as well as the elapsed time since the request first came through the middleware.
 // LogWriterFunc can then do whatever logging it needs to do.
 //
-//     import (
-//         "log"
-//         "github.com/go-ozzo/ozzo-routing/v2"
-//         "github.com/go-ozzo/ozzo-routing/v2/access"
-//         "net/http"
-//     )
+//	import (
+//	    "log"
+//	    "github.com/go-ozzo/ozzo-routing/v2"
+//	    "github.com/go-ozzo/ozzo-routing/v2/access"
+//	    "net/http"
+//	)
 //
-//     func myCustomLogger(req http.Context, res access.LogResponseWriter, elapsed int64) {
-//         // Do something with the request, response, and elapsed time data here
-//     }
-//     r := routing.New()
-//     r.Use(access.CustomLogger(myCustomLogger))
+//	func myCustomLogger(req http.Context, res access.LogResponseWriter, elapsed int64) {
+//	    // Do something with the request, response, and elapsed time data here
+//	}
+//	r := routing.New()
+//	r.Use(access.CustomLogger(myCustomLogger))
 func CustomLogger(loggerFunc LogWriterFunc) routing.Handler {
 	return func(c *routing.Context) error {
 		startTime := time.Now()
 
 		req := c.Request
-		rw := &LogResponseWriter{c.Response, http.StatusOK, 0}
+		rw := &LogResponseWriter{c.Response, http.StatusOK, 0, startTime, 0}
 		c.Response = rw
 
 		err := c.Next()
 
 		elapsed := float64(time.Now().Sub(startTime).Nanoseconds()) / 1e6
+		rw.TimeToFirstByte = rw.FirstWrite.Sub(startTime)
 		loggerFunc(req, rw, elapsed)
 
 		return err
@@ -65,14 +66,14 @@ func CustomLogger(loggerFunc LogWriterFunc) routing.Handler {
 // The access log messages contain information including client IPs, time used to serve each request, request line,
 // response status and size.
 //
-//     import (
-//         "log"
-//         "github.com/go-ozzo/ozzo-routing/v2"
-//         "github.com/go-ozzo/ozzo-routing/v2/access"
-//     )
+//	import (
+//	    "log"
+//	    "github.com/go-ozzo/ozzo-routing/v2"
+//	    "github.com/go-ozzo/ozzo-routing/v2/access"
+//	)
 //
-//     r := routing.New()
-//     r.Use(access.Logger(log.Printf))
+//	r := routing.New()
+//	r.Use(access.Logger(log.Printf))
 func Logger(log LogFunc) routing.Handler {
 	var logger = func(req *http.Request, rw *LogResponseWriter, elapsed float64) {
 		clientIP := GetClientIP(req)
@@ -86,11 +87,16 @@ func Logger(log LogFunc) routing.Handler {
 // LogResponseWriter wraps http.ResponseWriter in order to capture HTTP status and response length information.
 type LogResponseWriter struct {
 	http.ResponseWriter
-	Status       int
-	BytesWritten int64
+	Status          int
+	BytesWritten    int64
+	FirstWrite      time.Time
+	TimeToFirstByte time.Duration
 }
 
 func (r *LogResponseWriter) Write(p []byte) (int, error) {
+	if r.FirstWrite.IsZero() {
+		r.FirstWrite = time.Now()
+	}
 	written, err := r.ResponseWriter.Write(p)
 	r.BytesWritten += int64(written)
 	return written, err
@@ -98,6 +104,9 @@ func (r *LogResponseWriter) Write(p []byte) (int, error) {
 
 // WriteHeader records the response status and then writes HTTP headers.
 func (r *LogResponseWriter) WriteHeader(status int) {
+	if r.FirstWrite.IsZero() {
+		r.FirstWrite = time.Now()
+	}
 	r.Status = status
 	r.ResponseWriter.WriteHeader(status)
 }

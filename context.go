@@ -5,7 +5,9 @@
 package routing
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 )
 
 // Context represents the contextual data and environment while processing an incoming HTTP request.
@@ -56,6 +58,41 @@ func (c *Context) SetParam(name, value string) {
 	}
 	c.pnames = append(c.pnames, name)
 	c.pvalues = append(c.pvalues, value)
+}
+
+// GetParamNames returns a copy of the parameter names.
+func (c *Context) GetParamNames() []string {
+	pnames := make([]string, len(c.pnames))
+	copy(pnames, c.pnames)
+	return pnames
+}
+
+// GetParamValues returns a copy of the parameter values.
+func (c *Context) GetParamValues() []string {
+	pvalues := make([]string, len(c.pvalues))
+	copy(pvalues, c.pvalues)
+	return pvalues
+}
+
+// GetUrlWithParams returns the requests url with parameter values
+// being replaced with the parameter names
+func (c *Context) GetUrlWithParamNames() string {
+	if c.Request == nil || c.Request.URL == nil {
+		return ""
+	}
+	url := c.Request.URL.Path
+	for i, pvalue := range c.pvalues {
+		if pvalue == "" || len(c.pnames) < i {
+			break
+		}
+		lastIndex := strings.LastIndex(url, pvalue)
+		if lastIndex == -1 {
+			continue
+		}
+		replacement := fmt.Sprintf("<%v>", c.pnames[i])
+		url = url[:lastIndex] + replacement + url[lastIndex+len(pvalue):]
+	}
+	return url
 }
 
 // Get returns the named data item previously registered with the context by calling Set.
