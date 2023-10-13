@@ -41,6 +41,8 @@ func init() {
 // For example, if the path map contains both "/css" and "/css/img", and the URL path is "/css/img/logo.gif",
 // then the path mapped by "/css/img" will be used.
 //
+// The usage of URL.Paths containing ".." as path element is forbidden, but ".."" can be used in file names.
+//
 //	import (
 //	    "log"
 //	    "github.com/studio-b12/ozzo-routing"
@@ -63,6 +65,10 @@ func Server(pathMap PathMap, opts ...ServerOptions) routing.Handler {
 	return func(c *routing.Context) error {
 		if c.Request.Method != "GET" && c.Request.Method != "HEAD" {
 			return routing.NewHTTPError(http.StatusMethodNotAllowed)
+		}
+
+		if containsDotDot(c.Request.URL.Path) {
+			return routing.NewHTTPError(http.StatusBadRequest, "invalid URL path")
 		}
 
 		path, found := matchPath(c.Request.URL.Path, from, to)
@@ -132,6 +138,8 @@ func serveFile(c *routing.Context, dir compressionDir, path string) error {
 // The file to be served can be specified as an absolute file path or a path relative to RootPath (which
 // defaults to the current working path).
 // If the specified file does not exist, the handler will pass the control to the next available handler.
+//
+// The usage of URL.Paths containing ".." as path element is forbidden, but ".."" can be used in file names.
 func Content(path string, opts ...ServerOptions) routing.Handler {
 	options := getServerOptions(opts)
 
@@ -140,6 +148,10 @@ func Content(path string, opts ...ServerOptions) routing.Handler {
 	return func(c *routing.Context) error {
 		if c.Request.Method != "GET" && c.Request.Method != "HEAD" {
 			return routing.NewHTTPError(http.StatusMethodNotAllowed)
+		}
+
+		if containsDotDot(c.Request.URL.Path) {
+			return routing.NewHTTPError(http.StatusBadRequest, "invalid URL path")
 		}
 
 		encodings := negotiateEncodings(c, options.Compression)
@@ -192,3 +204,18 @@ func negotiateEncodings(c *routing.Context, available []Encoding) []Encoding {
 
 	return negotioated
 }
+
+// Equivalent to containsDotDot() check in http.ServeFile()
+func containsDotDot(v string) bool {
+	if !strings.Contains(v, "..") {
+		return false
+	}
+	for _, ent := range strings.FieldsFunc(v, isSlashRune) {
+		if ent == ".." {
+			return true
+		}
+	}
+	return false
+}
+
+func isSlashRune(r rune) bool { return r == '/' || r == '\\' }
