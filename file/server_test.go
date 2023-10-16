@@ -185,3 +185,31 @@ func TestServer(t *testing.T) {
 		assert.Equal(t, "hello\n", res.Body.String())
 	}
 }
+
+func TestExcludeDotDotContent(t *testing.T) {
+	h := Content("testdata/index.html")
+	req, _ := http.NewRequest("GET", "/../index.html", nil)
+	res := httptest.NewRecorder()
+	c := routing.NewContext(res, req)
+	err := h(c)
+	assert.NotNil(t, err)
+	assert.Equal(t, http.StatusBadRequest, err.(routing.HTTPError).StatusCode())
+}
+
+func TestExcludeDotDotServer(t *testing.T) {
+	h := Server(PathMap{"/test": "testdata/css"})
+	// working request
+	req, _ := http.NewRequest("GET", "/test/index.html", nil)
+	res := httptest.NewRecorder()
+	c := routing.NewContext(res, req)
+	err := h(c)
+	assert.Nil(t, err)
+	assert.Equal(t, "css.html\n", res.Body.String())
+	// illegal request
+	req, _ = http.NewRequest("GET", "/test/../index.html", nil)
+	res = httptest.NewRecorder()
+	c = routing.NewContext(res, req)
+	err = h(c)
+	assert.NotNil(t, err)
+	assert.Equal(t, http.StatusBadRequest, err.(routing.HTTPError).StatusCode())
+}
