@@ -41,7 +41,7 @@ func init() {
 // For example, if the path map contains both "/css" and "/css/img", and the URL path is "/css/img/logo.gif",
 // then the path mapped by "/css/img" will be used.
 //
-// The usage of URL.Paths containing ".." as path element is forbidden, but ".."" can be used in file names.
+// The usage of URL.Paths containing ".." as path element is forbidden, but ".." can be used in file names.
 //
 //	import (
 //	    "log"
@@ -139,7 +139,7 @@ func serveFile(c *routing.Context, dir compressionDir, path string) error {
 // defaults to the current working path).
 // If the specified file does not exist, the handler will pass the control to the next available handler.
 //
-// The usage of URL.Paths containing ".." as path element is forbidden, but ".."" can be used in file names.
+// The usage of URL.Paths containing ".." as path element is forbidden, but ".." can be used in file names.
 func Content(path string, opts ...ServerOptions) routing.Handler {
 	options := getServerOptions(opts)
 
