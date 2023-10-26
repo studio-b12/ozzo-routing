@@ -1,6 +1,7 @@
 package file
 
 import (
+	"io/fs"
 	"path/filepath"
 
 	routing "github.com/go-ozzo/ozzo-routing/v2"
@@ -29,6 +30,8 @@ type ServerOptions struct {
 	// unser agent. The first encoding which matches the accepted encodings from the user agent as well
 	// as is available as file is served to the client.
 	Compression []Encoding
+	// The FS to be used to serve files from. When set, this overrides RootPath.
+	FS fs.FS
 }
 
 // Merge takes another instance of ServerOptions and merges it with the current instance.
@@ -51,6 +54,9 @@ func (t ServerOptions) Merge(other ServerOptions) (new ServerOptions) {
 	}
 	if other.RootPath != "" {
 		new.RootPath = other.RootPath
+	}
+	if other.FS != nil {
+		new.FS = other.FS
 	}
 
 	return new

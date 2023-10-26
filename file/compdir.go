@@ -6,7 +6,7 @@ import (
 )
 
 type compressionDir struct {
-	dir       http.Dir
+	dir       http.FileSystem
 	encodings []Encoding
 }
 

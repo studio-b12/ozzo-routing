@@ -5,14 +5,19 @@
 package file
 
 import (
+	"embed"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
 	routing "github.com/go-ozzo/ozzo-routing/v2"
 	"github.com/stretchr/testify/assert"
 )
+
+//go:embed testdata
+var embeddedTestData embed.FS
 
 func TestParsePathMap(t *testing.T) {
 	tests := []struct {
@@ -105,7 +110,23 @@ func TestContent(t *testing.T) {
 }
 
 func TestServer(t *testing.T) {
-	h := Server(PathMap{"/css": "/testdata/css"})
+	t.Run("nil-fs", func(t *testing.T) {
+		testServerWithOptions(t)
+	})
+
+	t.Run("osdir-fs", func(t *testing.T) {
+		testServerWithOptions(t, ServerOptions{FS: os.DirFS(RootPath)})
+	})
+
+	t.Run("embed-fs", func(t *testing.T) {
+		testServerWithOptions(t, ServerOptions{FS: embeddedTestData})
+	})
+}
+
+func testServerWithOptions(t *testing.T, opts ...ServerOptions) {
+	t.Helper()
+
+	h := Server(PathMap{"/css": "/testdata/css"}, opts...)
 	tests := []struct {
 		id          string
 		method, url string
@@ -134,12 +155,12 @@ func TestServer(t *testing.T) {
 		}
 	}
 
-	h = Server(PathMap{"/css": "/testdata/css"}, ServerOptions{
+	h = Server(PathMap{"/css": "/testdata/css"}, append([]ServerOptions{{
 		IndexFile: "index.html",
 		Allow: func(c *routing.Context, path string) bool {
 			return path != "/testdata/css/main.css"
 		},
-	})
+	}}, opts...)...)
 
 	req, _ := http.NewRequest("GET", "/css/main.css", nil)
 	res := httptest.NewRecorder()
@@ -156,13 +177,13 @@ func TestServer(t *testing.T) {
 
 	{
 		// with CatchAll option
-		h = Server(PathMap{"/css": "/testdata/css"}, ServerOptions{
+		h = Server(PathMap{"/css": "/testdata/css"}, append([]ServerOptions{{
 			IndexFile:    "index.html",
 			CatchAllFile: "testdata/index.html",
 			Allow: func(c *routing.Context, path string) bool {
 				return path != "/testdata/css/main.css"
 			},
-		})
+		}}, opts...)...)
 
 		req, _ := http.NewRequest("GET", "/css/main.css", nil)
 		res := httptest.NewRecorder()

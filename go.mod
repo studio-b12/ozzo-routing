@@ -1,6 +1,6 @@
 module github.com/go-ozzo/ozzo-routing/v2
 
-go 1.13
+go 1.16
 
 require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible

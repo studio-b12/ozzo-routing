@@ -59,8 +59,13 @@ func Server(pathMap PathMap, opts ...ServerOptions) routing.Handler {
 
 	from, to := parsePathMap(pathMap)
 
-	// security measure: limit the files within options.RootPath
-	dir := http.Dir(options.RootPath)
+	var fsys http.FileSystem
+	if options.FS != nil {
+		fsys = http.FS(options.FS)
+	} else {
+		// security measure: limit the files within options.RootPath
+		fsys = http.FS(os.DirFS(options.RootPath))
+	}
 
 	return func(c *routing.Context) error {
 		if c.Request.Method != "GET" && c.Request.Method != "HEAD" {
@@ -84,7 +89,7 @@ func Server(pathMap PathMap, opts ...ServerOptions) routing.Handler {
 		)
 
 		encodings := negotiateEncodings(c, options.Compression)
-		dir := compressionDir{dir, encodings}
+		dir := compressionDir{fsys, encodings}
 
 		if file, enc, err = dir.Open(path); err != nil {
 			if options.CatchAllFile != "" {
