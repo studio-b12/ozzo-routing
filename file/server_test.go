@@ -105,7 +105,7 @@ func TestContent(t *testing.T) {
 }
 
 func TestServer(t *testing.T) {
-	h := Server(PathMap{"/css": "/testdata/css"})
+	h := Server(PathMap{"/css": "testdata/css"})
 	tests := []struct {
 		id          string
 		method, url string
@@ -134,10 +134,10 @@ func TestServer(t *testing.T) {
 		}
 	}
 
-	h = Server(PathMap{"/css": "/testdata/css"}, ServerOptions{
+	h = Server(PathMap{"/css": "testdata/css"}, ServerOptions{
 		IndexFile: "index.html",
 		Allow: func(c *routing.Context, path string) bool {
-			return path != "/testdata/css/main.css"
+			return path != "testdata/css/main.css"
 		},
 	})
 
@@ -156,11 +156,11 @@ func TestServer(t *testing.T) {
 
 	{
 		// with CatchAll option
-		h = Server(PathMap{"/css": "/testdata/css"}, ServerOptions{
+		h = Server(PathMap{"/css": "testdata/css"}, ServerOptions{
 			IndexFile:    "index.html",
 			CatchAllFile: "testdata/index.html",
 			Allow: func(c *routing.Context, path string) bool {
-				return path != "/testdata/css/main.css"
+				return path != "testdata/css/main.css"
 			},
 		})
 
