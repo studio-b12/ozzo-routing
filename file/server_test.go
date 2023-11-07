@@ -7,6 +7,7 @@ package file
 import (
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -68,40 +69,80 @@ func TestMatchPath(t *testing.T) {
 }
 
 func TestContent(t *testing.T) {
-	h := Content("testdata/index.html")
-	req, _ := http.NewRequest("GET", "/index.html", nil)
-	res := httptest.NewRecorder()
-	c := routing.NewContext(res, req)
-	err := h(c)
-	assert.Nil(t, err)
-	assert.Equal(t, "hello\n", res.Body.String())
+	t.Run("relative", func(t *testing.T) {
+		h := Content("testdata/index.html")
+		req, _ := http.NewRequest("GET", "/index.html", nil)
+		res := httptest.NewRecorder()
+		c := routing.NewContext(res, req)
+		err := h(c)
+		assert.Nil(t, err)
+		assert.Equal(t, "hello\n", res.Body.String())
 
-	h = Content("testdata/index.html")
-	req, _ = http.NewRequest("POST", "/index.html", nil)
-	res = httptest.NewRecorder()
-	c = routing.NewContext(res, req)
-	err = h(c)
-	if assert.NotNil(t, err) {
-		assert.Equal(t, http.StatusMethodNotAllowed, err.(routing.HTTPError).StatusCode())
-	}
+		h = Content("testdata/index.html")
+		req, _ = http.NewRequest("POST", "/index.html", nil)
+		res = httptest.NewRecorder()
+		c = routing.NewContext(res, req)
+		err = h(c)
+		if assert.NotNil(t, err) {
+			assert.Equal(t, http.StatusMethodNotAllowed, err.(routing.HTTPError).StatusCode())
+		}
 
-	h = Content("testdata/index.go")
-	req, _ = http.NewRequest("GET", "/index.html", nil)
-	res = httptest.NewRecorder()
-	c = routing.NewContext(res, req)
-	err = h(c)
-	if assert.NotNil(t, err) {
-		assert.Equal(t, http.StatusNotFound, err.(routing.HTTPError).StatusCode())
-	}
+		h = Content("testdata/index.go")
+		req, _ = http.NewRequest("GET", "/index.html", nil)
+		res = httptest.NewRecorder()
+		c = routing.NewContext(res, req)
+		err = h(c)
+		if assert.NotNil(t, err) {
+			assert.Equal(t, http.StatusNotFound, err.(routing.HTTPError).StatusCode())
+		}
 
-	h = Content("testdata/css")
-	req, _ = http.NewRequest("GET", "/index.html", nil)
-	res = httptest.NewRecorder()
-	c = routing.NewContext(res, req)
-	err = h(c)
-	if assert.NotNil(t, err) {
-		assert.Equal(t, http.StatusNotFound, err.(routing.HTTPError).StatusCode())
-	}
+		h = Content("testdata/css")
+		req, _ = http.NewRequest("GET", "/index.html", nil)
+		res = httptest.NewRecorder()
+		c = routing.NewContext(res, req)
+		err = h(c)
+		if assert.NotNil(t, err) {
+			assert.Equal(t, http.StatusNotFound, err.(routing.HTTPError).StatusCode())
+		}
+	})
+
+	t.Run("absolute", func(t *testing.T) {
+
+		h := Content(mustAbs("testdata/index.html"))
+		req, _ := http.NewRequest("GET", "/index.html", nil)
+		res := httptest.NewRecorder()
+		c := routing.NewContext(res, req)
+		err := h(c)
+		assert.Nil(t, err)
+		assert.Equal(t, "hello\n", res.Body.String())
+
+		h = Content(mustAbs("testdata/index.html"))
+		req, _ = http.NewRequest("POST", "/index.html", nil)
+		res = httptest.NewRecorder()
+		c = routing.NewContext(res, req)
+		err = h(c)
+		if assert.NotNil(t, err) {
+			assert.Equal(t, http.StatusMethodNotAllowed, err.(routing.HTTPError).StatusCode())
+		}
+
+		h = Content(mustAbs("testdata/index.go"))
+		req, _ = http.NewRequest("GET", "/index.html", nil)
+		res = httptest.NewRecorder()
+		c = routing.NewContext(res, req)
+		err = h(c)
+		if assert.NotNil(t, err) {
+			assert.Equal(t, http.StatusNotFound, err.(routing.HTTPError).StatusCode())
+		}
+
+		h = Content(mustAbs("testdata/css"))
+		req, _ = http.NewRequest("GET", "/index.html", nil)
+		res = httptest.NewRecorder()
+		c = routing.NewContext(res, req)
+		err = h(c)
+		if assert.NotNil(t, err) {
+			assert.Equal(t, http.StatusNotFound, err.(routing.HTTPError).StatusCode())
+		}
+	})
 }
 
 func TestServer(t *testing.T) {
@@ -212,4 +253,12 @@ func TestExcludeDotDotServer(t *testing.T) {
 	err = h(c)
 	assert.NotNil(t, err)
 	assert.Equal(t, http.StatusBadRequest, err.(routing.HTTPError).StatusCode())
+}
+
+func mustAbs(path string) string {
+	pth, err := filepath.Abs(path)
+	if err != nil {
+		panic(err)
+	}
+	return pth
 }

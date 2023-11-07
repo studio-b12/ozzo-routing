@@ -143,7 +143,13 @@ func serveFile(c *routing.Context, dir compressionDir, path string) error {
 func Content(path string, opts ...ServerOptions) routing.Handler {
 	options := getServerOptions(opts)
 
-	dir := http.Dir(options.RootPath)
+	var dir http.Dir
+	if filepath.IsAbs(path) {
+		dir = http.Dir(path)
+		path = ""
+	} else {
+		dir = http.Dir(options.RootPath)
+	}
 
 	return func(c *routing.Context) error {
 		if c.Request.Method != "GET" && c.Request.Method != "HEAD" {
