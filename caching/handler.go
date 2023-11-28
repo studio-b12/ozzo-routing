@@ -38,64 +38,64 @@ func (t Options) BuildHeaderValues() string {
 	var sb strings.Builder
 
 	if t.Access != "" {
-		fmt.Fprintf(&sb, "%s,", t.Access)
+		fmt.Fprintf(&sb, "%s, ", t.Access)
 	}
 
 	if t.MaxAge != 0 {
-		fmt.Fprintf(&sb, "max-age=%d,", int64(t.MaxAge.Round(time.Second).Seconds()))
+		fmt.Fprintf(&sb, "max-age=%d, ", int64(t.MaxAge.Round(time.Second).Seconds()))
 	}
 
 	if t.SMaxAge != 0 {
-		fmt.Fprintf(&sb, "s-max-age=%d,", int64(t.SMaxAge.Round(time.Second).Seconds()))
+		fmt.Fprintf(&sb, "s-max-age=%d, ", int64(t.SMaxAge.Round(time.Second).Seconds()))
 	}
 
 	if t.NoCache {
-		fmt.Fprint(&sb, "no-cache,")
+		fmt.Fprint(&sb, "no-cache, ")
 	}
 
 	if t.NoStore {
-		fmt.Fprint(&sb, "no-store,")
+		fmt.Fprint(&sb, "no-store, ")
 	}
 
 	if t.MustRevalidate {
-		fmt.Fprint(&sb, "must-revalidate,")
+		fmt.Fprint(&sb, "must-revalidate, ")
 	}
 
 	if t.ProxyRevalidate {
-		fmt.Fprint(&sb, "proxy-revalidate,")
+		fmt.Fprint(&sb, "proxy-revalidate, ")
 	}
 
 	if t.MustUnderstand {
-		fmt.Fprint(&sb, "must-understand,")
+		fmt.Fprint(&sb, "must-understand, ")
 	}
 
 	if t.NoTransform {
-		fmt.Fprint(&sb, "no-transform,")
+		fmt.Fprint(&sb, "no-transform, ")
 	}
 
 	if t.Immutable {
-		fmt.Fprint(&sb, "immutable,")
+		fmt.Fprint(&sb, "immutable, ")
 	}
 
 	v := sb.String()
-	if len(v) == 0 {
+	if len(v) < 2 {
 		return ""
 	}
 
-	return v[:len(v)-1]
+	return v[:len(v)-2]
 }
 
-// Handler returns a routing.Handler which sets the "Access-Control" header
+// Handler returns a routing.Handler which sets the "Cache-Control" header
 // value as defined in the given options to the response.
 func Handler(options Options) routing.Handler {
 	headerValue := options.BuildHeaderValues()
 	return func(c *routing.Context) error {
-		c.Response.Header().Set("Access-Control", headerValue)
+		c.Response.Header().Set("Cache-Control", headerValue)
 		return nil
 	}
 }
 
-// Public returns a routing.Handler which sets the "Access-Control" header
+// Public returns a routing.Handler which sets the "Cache-Control" header
 // value to "public,max-age=<maxAge>".
 func Public(maxAge time.Duration) routing.Handler {
 	return Handler(Options{
@@ -104,7 +104,7 @@ func Public(maxAge time.Duration) routing.Handler {
 	})
 }
 
-// Private returns a routing.Handler which sets the "Access-Control" header
+// Private returns a routing.Handler which sets the "Cache-Control" header
 // value to "private,max-age=<maxAge>".
 func Private(maxAge time.Duration) routing.Handler {
 	return Handler(Options{
@@ -113,13 +113,13 @@ func Private(maxAge time.Duration) routing.Handler {
 	})
 }
 
-// NoCache returns a routing.Handler which sets the "Access-Control" header
+// NoCache returns a routing.Handler which sets the "Cache-Control" header
 // value to "no-cache".
 func NoCache() routing.Handler {
 	return Handler(Options{NoCache: true})
 }
 
-// NoStore returns a routing.Handler which sets the "Access-Control" header
+// NoStore returns a routing.Handler which sets the "Cache-Control" header
 // value to "no-store".
 func NoStore() routing.Handler {
 	return Handler(Options{NoStore: true})
