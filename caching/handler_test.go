@@ -25,7 +25,7 @@ func TestOptions_BuildHeaderValues(t1 *testing.T) {
 				NoTransform:     true,
 				Immutable:       true,
 			},
-			want: "public,max-age=300,s-max-age=600,no-cache,no-store,must-revalidate,proxy-revalidate,must-understand,no-transform,immutable",
+			want: "public, max-age=300, s-max-age=600, no-cache, no-store, must-revalidate, proxy-revalidate, must-understand, no-transform, immutable",
 		},
 		{
 			name: "partial",
@@ -34,7 +34,7 @@ func TestOptions_BuildHeaderValues(t1 *testing.T) {
 				MaxAge:         30 * time.Second,
 				MustRevalidate: true,
 			},
-			want: "public,max-age=30,must-revalidate",
+			want: "public, max-age=30, must-revalidate",
 		},
 		{
 			name:   "empty",
