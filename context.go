@@ -80,9 +80,10 @@ func (c *Context) GetUrlWithParamNames() string {
 	if c.Request == nil || c.Request.URL == nil {
 		return ""
 	}
+
 	url := c.Request.URL.Path
 	for i, pvalue := range c.pvalues {
-		if pvalue == "" || len(c.pnames) < i {
+		if pvalue == "" || len(c.pnames) < i+1 {
 			break
 		}
 		lastIndex := strings.LastIndex(url, pvalue)
