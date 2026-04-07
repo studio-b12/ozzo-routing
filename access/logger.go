@@ -78,7 +78,16 @@ func Logger(log LogFunc) routing.Handler {
 	var logger = func(req *http.Request, rw *LogResponseWriter, elapsed float64) {
 		clientIP := GetClientIP(req)
 		requestLine := fmt.Sprintf("%s %s %s", req.Method, req.URL.String(), req.Proto)
-		log(`[%s] [%.3fms] %s %d %d`, clientIP, elapsed, requestLine, rw.Status, rw.BytesWritten)
+		log(
+			`[%s] %s %d total=%.3fms ttfb=%.3fms req-len=%d resp-len=%d`,
+			clientIP,
+			requestLine,
+			rw.Status,
+			elapsed,
+			rw.TimeToFirstByte.Milliseconds(),
+			req.ContentLength,
+			rw.BytesWritten,
+		)
 
 	}
 	return CustomLogger(logger)
