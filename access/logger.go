@@ -21,10 +21,10 @@ type LogFunc func(format string, a ...interface{})
 
 // LogWriterFunc takes in the request and responseWriter objects as well
 // as a float64 containing the elapsed time since the request first passed
-// through this middleware and does whatever log writing it wants with that
-// information.
+// through this middleware and the ttfb (time to first byte) and does whatever
+// log writing it wants with that information.
 // LogWriterFunc should be thread safe.
-type LogWriterFunc func(req *http.Request, res *LogResponseWriter, elapsed float64)
+type LogWriterFunc func(req *http.Request, res *LogResponseWriter, elapsed float64, ttfb float64)
 
 // CustomLogger returns a handler that calls the LogWriterFunc passed to it for every request.
 // The LogWriterFunc is provided with the http.Request and LogResponseWriter objects for the
@@ -54,8 +54,11 @@ func CustomLogger(loggerFunc LogWriterFunc) routing.Handler {
 		err := c.Next()
 
 		elapsed := float64(time.Now().Sub(startTime).Nanoseconds()) / 1e6
+
 		rw.TimeToFirstByte = rw.FirstWrite.Sub(startTime)
-		loggerFunc(req, rw, elapsed)
+		ttfb := float64(rw.TimeToFirstByte.Nanoseconds()) / 1e6
+
+		loggerFunc(req, rw, elapsed, ttfb)
 
 		return err
 	}
@@ -75,7 +78,7 @@ func CustomLogger(loggerFunc LogWriterFunc) routing.Handler {
 //	r := routing.New()
 //	r.Use(access.Logger(log.Printf))
 func Logger(log LogFunc) routing.Handler {
-	var logger = func(req *http.Request, rw *LogResponseWriter, elapsed float64) {
+	var logger = func(req *http.Request, rw *LogResponseWriter, elapsed float64, ttfb float64) {
 		clientIP := GetClientIP(req)
 		requestLine := fmt.Sprintf("%s %s %s", req.Method, req.URL.String(), req.Proto)
 		log(
@@ -84,7 +87,7 @@ func Logger(log LogFunc) routing.Handler {
 			requestLine,
 			rw.Status,
 			elapsed,
-			float64(rw.TimeToFirstByte.Nanoseconds())/1e6,
+			ttfb,
 			req.ContentLength,
 			rw.BytesWritten,
 		)
