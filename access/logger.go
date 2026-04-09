@@ -24,7 +24,7 @@ type LogFunc func(format string, a ...interface{})
 // through this middleware and the ttfb (time to first byte) and does whatever
 // log writing it wants with that information.
 // LogWriterFunc should be thread safe.
-type LogWriterFunc func(req *http.Request, res *LogResponseWriter, elapsed float64, ttfb float64)
+type LogWriterFunc func(req *http.Request, res *LogResponseWriter, elapsedMs float64, ttfbMs float64)
 
 // CustomLogger returns a handler that calls the LogWriterFunc passed to it for every request.
 // The LogWriterFunc is provided with the http.Request and LogResponseWriter objects for the
@@ -56,12 +56,22 @@ func CustomLogger(loggerFunc LogWriterFunc) routing.Handler {
 
 		err := c.Next()
 
-		elapsed := float64(time.Now().Sub(startTime).Nanoseconds()) / 1e6
+		endTime := time.Now()
+		elapsed := endTime.Sub(startTime)
 
-		rw.TimeToFirstByte = rw.FirstWrite.Sub(startTime)
-		ttfb := float64(rw.TimeToFirstByte.Nanoseconds()) / 1e6
+		if !rw.FirstWrite.IsZero() {
+			rw.TimeToFirstByte = rw.FirstWrite.Sub(startTime)
+		} else {
+			rw.FirstWrite = endTime
+			rw.TimeToFirstByte = elapsed
+		}
 
-		loggerFunc(req, rw, elapsed, ttfb)
+		loggerFunc(
+			req,
+			rw,
+			float64(elapsed.Nanoseconds())/1e6,
+			float64(rw.TimeToFirstByte.Nanoseconds())/1e6,
+		)
 
 		return err
 	}
