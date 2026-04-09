@@ -95,7 +95,7 @@ func Logger(log LogFunc) routing.Handler {
 		clientIP := GetClientIP(req)
 		requestLine := fmt.Sprintf("%s %s %s", req.Method, req.URL.String(), req.Proto)
 		log(
-			`[%s] %s %d total=%.3fms ttfb=%.3fms req-len=%d resp-len=%d`,
+			`[%s] %s status=%d total=%.3fms ttfb=%.3fms req-len=%d resp-len=%d`,
 			clientIP,
 			requestLine,
 			rw.Status,
