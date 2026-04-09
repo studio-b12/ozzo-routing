@@ -84,7 +84,7 @@ func Logger(log LogFunc) routing.Handler {
 			requestLine,
 			rw.Status,
 			elapsed,
-			rw.TimeToFirstByte.Milliseconds(),
+			float64(rw.TimeToFirstByte.Nanoseconds())/1e6,
 			req.ContentLength,
 			rw.BytesWritten,
 		)
