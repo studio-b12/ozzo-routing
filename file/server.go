@@ -8,7 +8,7 @@ package file
 import (
 	"net/http"
 	"os"
-	"path/filepath"
+	"path"
 	"sort"
 	"strings"
 
@@ -71,8 +71,8 @@ func Server(pathMap PathMap, opts ...ServerOptions) routing.Handler {
 			return routing.NewHTTPError(http.StatusBadRequest, "invalid URL path")
 		}
 
-		path, found := matchPath(c.Request.URL.Path, from, to)
-		if !found || options.Allow != nil && !options.Allow(c, path) {
+		relPath, found := matchPath(c.Request.URL.Path, from, to)
+		if !found || options.Allow != nil && !options.Allow(c, relPath) {
 			return routing.NewHTTPError(http.StatusNotFound)
 		}
 
@@ -86,7 +86,7 @@ func Server(pathMap PathMap, opts ...ServerOptions) routing.Handler {
 		encodings := negotiateEncodings(c, options.Compression)
 		dir := compressionDir{dir, encodings}
 
-		if file, enc, err = dir.Open(path); err != nil {
+		if file, enc, err = dir.Open(relPath); err != nil {
 			if options.CatchAllFile != "" {
 				return serveFile(c, dir, options.CatchAllFile)
 			}
@@ -102,13 +102,13 @@ func Server(pathMap PathMap, opts ...ServerOptions) routing.Handler {
 			if options.IndexFile == "" {
 				return routing.NewHTTPError(http.StatusNotFound)
 			}
-			return serveFile(c, dir, filepath.Join(path, options.IndexFile))
+			return serveFile(c, dir, path.Join(relPath, options.IndexFile))
 		}
 
 		if enc != "" {
 			c.Response.Header().Set("Content-Encoding", string(enc))
 		}
-		http.ServeContent(c.Response, c.Request, path, fstat.ModTime(), file)
+		http.ServeContent(c.Response, c.Request, relPath, fstat.ModTime(), file)
 		return nil
 	}
 }
