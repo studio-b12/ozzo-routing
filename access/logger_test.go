@@ -47,7 +47,7 @@ func TestLogger(t *testing.T) {
 
 func TestLogResponseWriter(t *testing.T) {
 	res := httptest.NewRecorder()
-	w := &LogResponseWriter{res, 0, 0, time.Time{}, 0}
+	w := &LogResponseWriter{ResponseWriter: res}
 	w.WriteHeader(http.StatusBadRequest)
 	assert.Equal(t, http.StatusBadRequest, res.Code)
 	assert.Equal(t, http.StatusBadRequest, w.Status)
@@ -81,4 +81,70 @@ func getLogger(buf *bytes.Buffer) LogFunc {
 
 func handler1(c *routing.Context) error {
 	return errors.New("abc")
+}
+
+// Middlewares registered after the logger (e.g. for metrics) must see the time to first byte
+// right after c.Next(), not only the logger itself after the whole request.
+func TestTimeToFirstByteVisibleInsideLogger(t *testing.T) {
+	const before, after = 30 * time.Millisecond, 150 * time.Millisecond
+
+	var inner, logged time.Duration
+	r := routing.New()
+	r.Use(
+		CustomLogger(func(req *http.Request, rw *LogResponseWriter, elapsedMs float64, ttfbMs float64) {
+			logged = rw.TimeToFirstByte
+		}),
+		func(c *routing.Context) error {
+			err := c.Next()
+			inner = c.Response.(*LogResponseWriter).TimeToFirstByte
+			return err
+		},
+	)
+	r.To("GET", "/", func(c *routing.Context) error {
+		time.Sleep(before)
+		c.Response.WriteHeader(http.StatusOK)
+		time.Sleep(after)
+		_, err := c.Response.Write([]byte("body"))
+		return err
+	})
+	r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil))
+
+	if inner < before || inner >= before+after {
+		t.Fatalf("time to first byte inside the logger = %v, want at least %v and clearly below %v", inner, before, before+after)
+	}
+	if logged != inner {
+		t.Fatalf("logger saw %v, inner middleware saw %v, want the same value", logged, inner)
+	}
+}
+
+// Without any write, the logger still reports the total duration as time to first byte.
+func TestTimeToFirstByteWithoutWrite(t *testing.T) {
+	const wait = 20 * time.Millisecond
+
+	var logged time.Duration
+	r := routing.New()
+	r.Use(CustomLogger(func(req *http.Request, rw *LogResponseWriter, elapsedMs float64, ttfbMs float64) {
+		logged = rw.TimeToFirstByte
+	}))
+	r.To("GET", "/", func(c *routing.Context) error {
+		time.Sleep(wait)
+		return nil
+	})
+	r.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil))
+
+	if logged < wait {
+		t.Fatalf("time to first byte = %v, want at least %v", logged, wait)
+	}
+}
+
+// A writer not created by CustomLogger has no start time and leaves TimeToFirstByte untouched.
+func TestTimeToFirstByteWithoutLogger(t *testing.T) {
+	w := &LogResponseWriter{ResponseWriter: httptest.NewRecorder()}
+	w.WriteHeader(http.StatusOK)
+	if w.FirstWrite.IsZero() {
+		t.Fatal("FirstWrite not set")
+	}
+	if w.TimeToFirstByte != 0 {
+		t.Fatalf("TimeToFirstByte = %v, want 0 without a start time", w.TimeToFirstByte)
+	}
 }

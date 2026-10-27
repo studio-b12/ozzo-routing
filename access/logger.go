@@ -51,6 +51,7 @@ func CustomLogger(loggerFunc LogWriterFunc) routing.Handler {
 		rw := &LogResponseWriter{
 			ResponseWriter: c.Response,
 			Status:         http.StatusOK,
+			startTime:      startTime,
 		}
 		c.Response = rw
 
@@ -59,9 +60,8 @@ func CustomLogger(loggerFunc LogWriterFunc) routing.Handler {
 		endTime := time.Now()
 		elapsed := endTime.Sub(startTime)
 
-		if !rw.FirstWrite.IsZero() {
-			rw.TimeToFirstByte = rw.FirstWrite.Sub(startTime)
-		} else {
+		// TimeToFirstByte is set by the first write; only a response without any write needs it here.
+		if rw.FirstWrite.IsZero() {
 			rw.FirstWrite = endTime
 			rw.TimeToFirstByte = elapsed
 		}
@@ -112,16 +112,33 @@ func Logger(log LogFunc) routing.Handler {
 // LogResponseWriter wraps http.ResponseWriter in order to capture HTTP status and response length information.
 type LogResponseWriter struct {
 	http.ResponseWriter
-	Status          int
-	BytesWritten    int64
-	FirstWrite      time.Time
+	Status       int
+	BytesWritten int64
+	FirstWrite   time.Time
+	// TimeToFirstByte is the time from the start of the request in CustomLogger/Logger until the
+	// first Write or WriteHeader. It is set at that first write, so middlewares and handlers running
+	// inside the logger can read it after c.Next() returned. If nothing is written at all, it is set
+	// to the total duration, but only after the request, by CustomLogger.
 	TimeToFirstByte time.Duration
+
+	// startTime is set by CustomLogger. A writer created elsewhere has none and leaves
+	// TimeToFirstByte to whoever created it.
+	startTime time.Time
+}
+
+// recordFirstWrite stores the time of the first Write or WriteHeader and the resulting time to first byte.
+func (r *LogResponseWriter) recordFirstWrite() {
+	if !r.FirstWrite.IsZero() {
+		return
+	}
+	r.FirstWrite = time.Now()
+	if !r.startTime.IsZero() {
+		r.TimeToFirstByte = r.FirstWrite.Sub(r.startTime)
+	}
 }
 
 func (r *LogResponseWriter) Write(p []byte) (int, error) {
-	if r.FirstWrite.IsZero() {
-		r.FirstWrite = time.Now()
-	}
+	r.recordFirstWrite()
 	written, err := r.ResponseWriter.Write(p)
 	r.BytesWritten += int64(written)
 	return written, err
@@ -129,9 +146,7 @@ func (r *LogResponseWriter) Write(p []byte) (int, error) {
 
 // WriteHeader records the response status and then writes HTTP headers.
 func (r *LogResponseWriter) WriteHeader(status int) {
-	if r.FirstWrite.IsZero() {
-		r.FirstWrite = time.Now()
-	}
+	r.recordFirstWrite()
 	r.Status = status
 	r.ResponseWriter.WriteHeader(status)
 }
